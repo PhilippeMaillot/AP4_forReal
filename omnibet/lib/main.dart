@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'register_page.dart';
 import 'login_page.dart';
+import 'register_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -18,6 +18,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/register': (context) => RegisterPage(),
         '/login': (context) => LoginPage(),
+        '/home': (context) => MyHomePage(),
       },
     );
   }
@@ -53,3 +54,4 @@ class MyHomePage extends StatelessWidget {
     );
   }
 }
+

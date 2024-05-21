@@ -15,27 +15,30 @@ class _LoginPageState extends State<LoginPage> {
   String _email = '';
   String _password = '';
 
-Future<void> _login() async {
-  final url = Uri.parse('http://localhost:8080/mobileuser/login');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: json.encode({
-      'email': _email,
-      'password': _password, // Utilisez "password" au lieu de "password_hash"
-    }),
-  );
+  Future<void> _login() async {
+    final url = Uri.parse('http://localhost:8080/mobileuser/login');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': _email,
+        'password': _password, 
+      }),
+    );
 
-  if (response.statusCode == 200) {
-    final prefs = await SharedPreferences.getInstance();
-    final body = json.decode(response.body);
-    await prefs.setString('token', body['token']);
-    debugPrint('Connexion réussie');
-  } else {
-    debugPrint('Erreur de connexion');
+    if (response.statusCode == 200) {
+      final prefs = await SharedPreferences.getInstance();
+      final body = json.decode(response.body);
+      await prefs.setString('token', body['token']);
+      Navigator.pushNamed(context, '/home'); // Redirection vers la page principale après connexion
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur de connexion'),
+        ),
+      );
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +86,12 @@ Future<void> _login() async {
                   }
                 },
                 child: const Text('Se connecter'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/register');
+                },
+                child: const Text('Je n\'ai pas de compte. S\'inscrire.'),
               ),
             ],
           ),

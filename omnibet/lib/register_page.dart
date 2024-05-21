@@ -14,7 +14,7 @@ class _RegisterPageState extends State<RegisterPage> {
   String _password = '';
 
   Future<void> _register() async {
-    final url = Uri.parse('http://localhost:8080/mobileuser/add'); // URL d'inscription
+    final url = Uri.parse('http://localhost:8080/mobileuser/add');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -29,9 +29,17 @@ class _RegisterPageState extends State<RegisterPage> {
     );
 
     if (response.statusCode == 200) {
-      print('Inscription réussie');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Inscription réussie'),
+        ),
+      );
     } else {
-      print('Erreur d\'inscription');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur d\'inscription'),
+        ),
+      );
     }
   }
 
