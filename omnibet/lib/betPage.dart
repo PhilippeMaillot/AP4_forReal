@@ -90,8 +90,18 @@ class _BetPageState extends State<BetPage> {
               child: Text("Parier"),
               onPressed: () async {
                 double amount = double.parse(amountController.text);
-                await placeBet(widget.tournamentId, clubId, amount, prediction);
-                Navigator.of(context).pop();
+                final userId = await _getUserIdFromToken();
+                if (userId != null) {
+                  final userBalance = await _getUserBalance(userId);
+                  if (userBalance != null && userBalance >= amount) {
+                    await placeBet(widget.tournamentId, clubId, amount, prediction, userId);
+                    Navigator.of(context).pop();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Solde insuffisant pour placer ce pari.')));
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : Utilisateur non connecté.')));
+                }
               },
             ),
           ],
@@ -100,32 +110,27 @@ class _BetPageState extends State<BetPage> {
     );
   }
 
-  Future<void> placeBet(int tournamentId, int clubId, double amount, String prediction) async {
-    final userId = await _getUserIdFromToken();
-    if (userId != null) {
-      final response = await http.post(
-        Uri.parse('http://localhost:8080/bet/add'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, dynamic>{
-          'id_tournament': tournamentId,
-          'id_club': clubId,
-          'bet_amount': amount,
-          'bet_prediction': prediction,
-          'id_user': userId,
-        }),
-      );
+  Future<void> placeBet(int tournamentId, int clubId, double amount, String prediction, int userId) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:8080/bet/add'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'id_tournament': tournamentId,
+        'id_club': clubId,
+        'bet_amount': amount,
+        'bet_prediction': prediction,
+        'id_user': userId,
+      }),
+    );
 
-      if (response.statusCode == 200) {
-        // Pari réussi
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Pari placé avec succès!')));
-      } else {
-        // Erreur lors du placement du pari
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors du placement du pari.')));
-      }
+    if (response.statusCode == 200) {
+      // Pari réussi, maintenant mettons à jour le solde
+      await _updateUserBalance(userId, amount);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Pari placé avec succès!')));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : Utilisateur non connecté.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors du placement du pari.')));
     }
   }
 
@@ -135,12 +140,47 @@ class _BetPageState extends State<BetPage> {
 
     if (token != null) {
       // Récupérer l'ID de l'utilisateur à partir du token
-      final jwtPayload = json.decode(
-          ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
+      final jwtPayload = json.decode(ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
       final userId = jwtPayload['id'];
       return userId;
     } else {
       return null;
+    }
+  }
+
+  Future<int?> _getUserBalance(int userId) async {
+    final response = await http.get(Uri.parse('http://localhost:8080/mobileuser/getUserInfo/$userId'));
+
+    if (response.statusCode == 200) {
+      List jsonResponse = json.decode(response.body);
+      return jsonResponse[0]['balance'];
+    } else {
+      return null;
+    }
+  }
+
+  Future<void> _updateUserBalance(int userId, double betAmount) async {
+    final currentBalance = await _getUserBalance(userId);
+    if (currentBalance != null) {
+      var newBalance = currentBalance - betAmount;
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/mobileuser/update'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'id_user': userId,
+          'new_balance': newBalance,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Solde mis à jour avec succès
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Solde mis à jour avec succès!')));
+      } else {
+        // Erreur lors de la mise à jour du solde
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la mise à jour du solde.')));
+      }
     }
   }
 
