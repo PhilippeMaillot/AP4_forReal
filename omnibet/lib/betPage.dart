@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BetPage extends StatefulWidget {
   final int tournamentId;
@@ -99,26 +100,46 @@ class _BetPageState extends State<BetPage> {
   }
 
   Future<void> placeBet(int tournamentId, int clubId, double amount, String prediction) async {
-    final response = await http.post(
-      Uri.parse('http://localhost:8080/bet/add'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(<String, dynamic>{
-        'id_tournament': tournamentId,
-        'id_club': clubId,
-        'bet_amount': amount,
-        'bet_prediction': prediction,
-        'id_user': 1,
-      }),
-    );
+    final userId = await _getUserIdFromToken();
+    if (userId != null) {
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/bet/add'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'id_tournament': tournamentId,
+          'id_club': clubId,
+          'bet_amount': amount,
+          'bet_prediction': prediction,
+          'id_user': userId,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      // Pari réussi
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Pari placé avec succès!')));
+      if (response.statusCode == 200) {
+        // Pari réussi
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Pari placé avec succès!')));
+      } else {
+        // Erreur lors du placement du pari
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors du placement du pari.')));
+      }
     } else {
-      // Erreur lors du placement du pari
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors du placement du pari.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : Utilisateur non connecté.')));
+    }
+  }
+
+  Future<int?> _getUserIdFromToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token != null) {
+      // Récupérer l'ID de l'utilisateur à partir du token
+      final jwtPayload = json.decode(
+          ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
+      final userId = jwtPayload['id'];
+      return userId;
+    } else {
+      return null;
     }
   }
 
