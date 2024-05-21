@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'tournamentPage.dart';  // Assurez-vous d'importer la page des tournois
 import 'login_page.dart';
 import 'register_page.dart';
 
@@ -19,6 +20,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => RegisterPage(),
         '/login': (context) => LoginPage(),
         '/home': (context) => MyHomePage(),
+        '/tournament': (context) => TournamentListPage(),  // Ajoutez la route '/tournament
       },
     );
   }
