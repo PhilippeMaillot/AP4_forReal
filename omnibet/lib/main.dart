@@ -48,7 +48,8 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _userInfoFuture = _getUserInfo(); // Appel à _getUserInfo() pour récupérer les infos utilisateur au démarrage
+    _userInfoFuture =
+        _getUserInfo(); // Appel à _getUserInfo() pour récupérer les infos utilisateur au démarrage
   }
 
   static List<Widget> _widgetOptions = <Widget>[
@@ -91,6 +92,51 @@ class _MyHomePageState extends State<MyHomePage> {
           },
         ),
       ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              child: FutureBuilder<String>(
+                future: _userInfoFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Container(); // Retourne un widget vide pendant que les infos sont chargées
+                  } else {
+                    if (snapshot.hasError) {
+                      return Text('Erreur'); // Affiche un message d'erreur s'il y a eu une erreur
+                    } else {
+                      return Text(
+                        snapshot.data ?? '',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.white,
+                        ),
+                      ); // Affiche le nom d'utilisateur une fois qu'il est disponible
+                    }
+                  }
+                },
+              ),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+            ),
+            ListTile(
+              title: Text('Profil'),
+              onTap: () {
+                // Mettez ici la navigation vers la page de profil
+                Navigator.pop(context); // Ferme le Drawer
+              },
+            ),
+            ListTile(
+              title: Text('Se déconnecter'),
+              onTap: () {
+                _logout(context); // Déclenche la déconnexion
+              },
+            ),
+          ],
+        ),
+      ),
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
@@ -115,6 +161,10 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
+  // Reste du code...
+
+}
 
   Future<String> _getUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
@@ -159,4 +209,4 @@ class _MyHomePageState extends State<MyHomePage> {
     Navigator.pushNamedAndRemoveUntil(
         context, '/login', (route) => false); // Redirigez vers la page de connexion et supprimez toutes les routes empilées
   }
-}
+
