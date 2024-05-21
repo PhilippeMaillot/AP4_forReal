@@ -16,12 +16,14 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return  MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.grey,
       ),
       home: MyHomePage(),
+      
       routes: {
         '/register': (context) => RegisterPage(),
         '/login': (context) => LoginPage(),
@@ -125,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
               ),
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: Color.fromARGB(255, 0, 3, 5),
               ),
             ),
             ListTile(
@@ -190,9 +192,13 @@ class _MyHomePageState extends State<MyHomePage> {
       if (response.statusCode == 200) {
         final userInfo = json.decode(response.body);
         print(userInfo);
-        final userName = userInfo[0]['user_name']; // Obtenez uniquement le nom d'utilisateur
+        final userName = userInfo[0]['user_name'];
+        final userBalance = userInfo[0]['balance'];
+        // Obtenez uniquement le nom d'utilisateur
         print(userName);
-        return userName; // Retourner le nom d'utilisateur
+        print('OMNIPOINT:'+ userBalance.toString());
+        
+        return userName+ ' OMNIPOINT: ' + userBalance.toString(); // Retourner le nom d'utilisateur + point
       } else {
         return 'Erreur de récupération des informations de l\'utilisateur';
       }

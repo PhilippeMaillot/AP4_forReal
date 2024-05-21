@@ -19,12 +19,13 @@ class _RegisterPageState extends State<RegisterPage> {
       url,
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
+        
         'user_f_name': 'DefaultFirstName',
         'user_name': _userName,
         'email': _email,
         'password_hash': _password,
-        'role': 'user',
-        'balance': 0
+        'role': '1',
+        'balance': 50
       }),
     );
 
