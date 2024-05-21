@@ -16,19 +16,19 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return  MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.grey,
       ),
       home: MyHomePage(),
-      
       routes: {
         '/register': (context) => RegisterPage(),
         '/login': (context) => LoginPage(),
         '/home': (context) => MyHomePage(),
-        '/tournament': (context) => TournamentListPage(), // Ajoutez la route '/tournament
+        '/tournament': (context) =>
+            TournamentListPage(), // Ajoutez la route '/tournament
         '/profile': (context) => ProfilePage(), // Ajoutez la route '/profile'
       },
     );
@@ -48,7 +48,8 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _userInfoFuture = _getUserInfo(); // Appel à _getUserInfo() pour récupérer les infos utilisateur au démarrage
+    _userInfoFuture =
+        _getUserInfo(); // Appel à _getUserInfo() pour récupérer les infos utilisateur au démarrage
     _userIdFuture = _getUserIdFromToken();
   }
 
@@ -58,7 +59,8 @@ class _MyHomePageState extends State<MyHomePage> {
   ];
 
   void _onItemTapped(int index) async {
-    if (index == 2) { // Si l'utilisateur clique sur "Paris"
+    if (index == 2) {
+      // Si l'utilisateur clique sur "Paris"
       int? userId = await _getUserIdFromToken();
       if (userId != null) {
         print('User ID: $userId');
@@ -67,7 +69,8 @@ class _MyHomePageState extends State<MyHomePage> {
           MaterialPageRoute(builder: (context) => ViewBetPage(userId: userId)),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : Utilisateur non connecté.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Erreur : Utilisateur non connecté.')));
       }
     } else {
       setState(() {
@@ -87,7 +90,8 @@ class _MyHomePageState extends State<MyHomePage> {
               return Container(); // Retourne un widget vide pendant que les infos sont chargées
             } else {
               if (snapshot.hasError) {
-                return Text('Erreur'); // Affiche un message d'erreur s'il y a eu une erreur
+                return Text(
+                    'Erreur'); // Affiche un message d'erreur s'il y a eu une erreur
               } else {
                 return Text(
                   snapshot.data ?? '',
@@ -113,7 +117,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     return Container(); // Retourne un widget vide pendant que les infos sont chargées
                   } else {
                     if (snapshot.hasError) {
-                      return Text('Erreur'); // Affiche un message d'erreur s'il y a eu une erreur
+                      return Text(
+                          'Erreur'); // Affiche un message d'erreur s'il y a eu une erreur
                     } else {
                       return Text(
                         snapshot.data ?? '',
@@ -133,13 +138,15 @@ class _MyHomePageState extends State<MyHomePage> {
             ListTile(
               title: Text('Profil'),
               onTap: () {
-                Navigator.pushNamed(context, '/profile'); // Redirige vers la page de profil
+                Navigator.pushNamed(context,
+                    '/profile'); // Redirige vers la page de profil
               },
             ),
             ListTile(
               title: Text('Se déconnecter'),
               onTap: () {
-                _logout(context); // Déclenche la déconnexion
+                _logout(
+                    context); // Déclenche la déconnexion
               },
             ),
           ],
@@ -176,7 +183,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (token != null) {
       // Récupérer l'ID de l'utilisateur à partir du token
-      final jwtPayload = json.decode(ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
+      final jwtPayload = json.decode(
+          ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
       final userId = jwtPayload['id'];
 
       // Récupérer les informations de l'utilisateur à partir de la base de données
@@ -196,9 +204,11 @@ class _MyHomePageState extends State<MyHomePage> {
         final userBalance = userInfo[0]['balance'];
         // Obtenez uniquement le nom d'utilisateur
         print(userName);
-        print('OMNIPOINT:'+ userBalance.toString());
-        
-        return userName+ ' OMNIPOINT: ' + userBalance.toString(); // Retourner le nom d'utilisateur + point
+        print('OMNIPOINT:' + userBalance.toString());
+
+        return userName +
+            ' OMNIPOINT: ' +
+            userBalance.toString(); // Retourner le nom d'utilisateur + point
       } else {
         return 'Erreur de récupération des informations de l\'utilisateur';
       }
@@ -207,7 +217,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<int?> _getUserIdFromToken() async {
+  Future<int?> _getUserIdFromToken()
+async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
@@ -227,6 +238,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token'); // Supprimez le token des préférences partagées
     await prefs.remove('user_id'); // Supprimez l'ID de l'utilisateur des préférences partagées
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false); // Redirigez vers la page de connexion et supprimez toutes les routes empilées
+    Navigator.pushNamedAndRemoveUntil(
+        context, '/login', (route) => false); // Redirigez vers la page de connexion et supprimez toutes les routes empilées
   }
 }
