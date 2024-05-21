@@ -27,7 +27,6 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/home': (context) => MyHomePage(),
         '/tournament': (context) => TournamentListPage(), // Ajoutez la route '/tournament
-        '/viewBetPage': (context) => ViewBetPage(userId: 1,), // Ajoutez la route '/viewBetPage
         '/profile': (context) => ProfilePage(), // Ajoutez la route '/profile'
       },
     );
@@ -42,23 +41,37 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   late Future<String> _userInfoFuture; // Ajout de la variable Future
+  late Future<int?> _userIdFuture;
 
   @override
   void initState() {
     super.initState();
     _userInfoFuture = _getUserInfo(); // Appel à _getUserInfo() pour récupérer les infos utilisateur au démarrage
+    _userIdFuture = _getUserIdFromToken();
   }
 
   static List<Widget> _widgetOptions = <Widget>[
     Text('Home Page Content'), // Contenu de la page d'accueil
     TournamentListPage(), // Page des tournois
-    ViewBetPage(userId: 1), // Page des paris
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  void _onItemTapped(int index) async {
+    if (index == 2) { // Si l'utilisateur clique sur "Paris"
+      int? userId = await _getUserIdFromToken();
+      if (userId != null) {
+        print('User ID: $userId');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ViewBetPage(userId: userId)),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : Utilisateur non connecté.')));
+      }
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   @override
@@ -185,6 +198,22 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     } else {
       return 'Aucun utilisateur connecté';
+    }
+  }
+
+  Future<int?> _getUserIdFromToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token != null) {
+      // Récupérer l'ID de l'utilisateur à partir du token
+      final jwtPayload = json.decode(
+          ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
+      final userId = jwtPayload['id'];
+      print(userId); // Affichez l'ID de l'utilisateur dans la console
+      return userId;
+    } else {
+      return null;
     }
   }
 

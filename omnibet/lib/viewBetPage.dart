@@ -18,6 +18,7 @@ class _ViewBetPageState extends State<ViewBetPage> {
   void initState() {
     super.initState();
     futureBets = fetchBets(widget.userId);
+    print('User ID bets: ${widget.userId}');
   }
 
   Future<List<Map<String, dynamic>>> fetchBets(int userId) async {

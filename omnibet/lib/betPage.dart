@@ -24,6 +24,7 @@ class _BetPageState extends State<BetPage> {
   }
 
   Future<Map<String, dynamic>> fetchTournamentInfo(int id) async {
+    print("id: $id");
     final response = await http.get(Uri.parse('http://localhost:8080/tournament/info/$id'));
 
     if (response.statusCode == 200) {
