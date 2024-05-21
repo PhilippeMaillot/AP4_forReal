@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'tournamentPage.dart';  // Assurez-vous d'importer la page des tournois
 import 'login_page.dart';
 import 'register_page.dart';
+import 'viewBetPage.dart';  // Importez la page de visualisation des paris
 
 void main() {
   runApp(MyApp());
@@ -25,12 +26,32 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/home': (context) => MyHomePage(),
         '/tournament': (context) => TournamentListPage(),  // Ajoutez la route '/tournament
+        '/viewBetPage': (context) => ViewBetPage(userId: 1,),  // Ajoutez la route '/viewBetPage
       },
     );
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  int _selectedIndex = 0;
+
+  static List<Widget> _widgetOptions = <Widget>[
+    Text('Home Page Content'),  // Contenu de la page d'accueil
+    TournamentListPage(),       // Page des tournois
+    ViewBetPage(userId: 1),     // Page des paris
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,34 +59,26 @@ class MyHomePage extends StatelessWidget {
         title: Text('Home Page'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            FutureBuilder<String>(
-              future: _getUserInfo(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return Text('Bienvenue, ${snapshot.data}');
-                } else if (snapshot.hasError) {
-                  return Text('Erreur : ${snapshot.error}');
-                }
-                return CircularProgressIndicator();
-              },
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/tournament');
-              },
-              child: Text('Voir les tournois'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _logout(context);
-              },
-              child: Text('Se déconnecter'),
-            ),
-          ],
-        ),
+        child: _widgetOptions.elementAt(_selectedIndex),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list),
+            label: 'Tournois',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.sports_soccer),
+            label: 'Paris',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.amber[800],
+        onTap: _onItemTapped,
       ),
     );
   }
