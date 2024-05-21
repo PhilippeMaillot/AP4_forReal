@@ -105,11 +105,12 @@ Future<String> _getUserInfo() async {
     return 'Aucun utilisateur connecté';
   }
 }
-
-
-  void _logout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.remove('user_id'); // Supprimez l'ID de l'utilisateur des préférences partagées
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false); // Redirigez vers la page de connexion et supprimez toutes les routes empilées
-  }
+void _logout(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('token'); // Supprimez le token des préférences partagées
+  await prefs.remove('user_id'); // Supprimez l'ID de l'utilisateur des préférences partagées
+  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false); // Redirigez vers la page de connexion et supprimez toutes les routes empilées
 }
+
+} 
+
