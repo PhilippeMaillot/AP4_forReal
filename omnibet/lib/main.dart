@@ -91,7 +91,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
-    _userInfoSubject.close(); // Fermer le BehaviorSubject quand le widget est détruit
+    _userInfoSubject.close();
     super.dispose();
   }
 
@@ -99,7 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final userInfo = await _getUserInfo();
     _userInfoSubject.add(userInfo);
     // Actualiser périodiquement les informations de l'utilisateur
-    Timer.periodic(Duration(seconds: 10), (Timer t) async {
+    Timer.periodic(Duration(seconds: 100), (Timer t) async {
       final userInfo = await _getUserInfo();
       _userInfoSubject.add(userInfo);
     });
