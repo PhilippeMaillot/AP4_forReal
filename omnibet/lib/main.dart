@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:rxdart/rxdart.dart';
+import 'splash_screen.dart'; // Importez votre Splash Screen
 import 'tournamentPage.dart'; // Assurez-vous d'importer la page des tournois
 import 'login_page.dart';
 import 'register_page.dart';
@@ -22,15 +24,50 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.grey,
       ),
-      home: MyHomePage(),
+      // Utilisez votre Splash Screen comme page d'accueil
+      home: SplashScreen(), 
       routes: {
         '/register': (context) => RegisterPage(),
         '/login': (context) => LoginPage(),
         '/home': (context) => MyHomePage(),
-        '/tournament': (context) =>
-            TournamentListPage(), // Ajoutez la route '/tournament
+        '/tournament': (context) => TournamentListPage(), // Ajoutez la route '/tournament'
         '/profile': (context) => ProfilePage(), // Ajoutez la route '/profile'
       },
+    );
+  }
+}
+
+// Votre Splash Screen
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    // Vérifiez si l'utilisateur est connecté ou non
+    if (token != null) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 }
@@ -42,15 +79,30 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
-  late Future<String> _userInfoFuture; // Ajout de la variable Future
   late Future<int?> _userIdFuture;
+  final BehaviorSubject<String> _userInfoSubject = BehaviorSubject<String>();
 
   @override
   void initState() {
     super.initState();
-    _userInfoFuture =
-        _getUserInfo(); // Appel à _getUserInfo() pour récupérer les infos utilisateur au démarrage
     _userIdFuture = _getUserIdFromToken();
+    _fetchUserInfo();
+  }
+
+  @override
+  void dispose() {
+    _userInfoSubject.close(); // Fermer le BehaviorSubject quand le widget est détruit
+    super.dispose();
+  }
+
+  Future<void> _fetchUserInfo() async {
+    final userInfo = await _getUserInfo();
+    _userInfoSubject.add(userInfo);
+    // Actualiser périodiquement les informations de l'utilisateur
+    Timer.periodic(Duration(seconds: 10), (Timer t) async {
+      final userInfo = await _getUserInfo();
+      _userInfoSubject.add(userInfo);
+    });
   }
 
   static List<Widget> _widgetOptions = <Widget>[
@@ -83,15 +135,14 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: FutureBuilder<String>(
-          future: _userInfoFuture,
+        title: StreamBuilder<String>(
+          stream: _userInfoSubject.stream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Container(); // Retourne un widget vide pendant que les infos sont chargées
             } else {
               if (snapshot.hasError) {
-                return Text(
-                    'Erreur'); // Affiche un message d'erreur s'il y a eu une erreur
+                return Text('Erreur'); // Affiche un message d'erreur s'il y a eu une erreur
               } else {
                 return Text(
                   snapshot.data ?? '',
@@ -110,15 +161,14 @@ class _MyHomePageState extends State<MyHomePage> {
           padding: EdgeInsets.zero,
           children: <Widget>[
             DrawerHeader(
-              child: FutureBuilder<String>(
-                future: _userInfoFuture,
+              child: StreamBuilder<String>(
+                stream: _userInfoSubject.stream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Container(); // Retourne un widget vide pendant que les infos sont chargées
                   } else {
                     if (snapshot.hasError) {
-                      return Text(
-                          'Erreur'); // Affiche un message d'erreur s'il y a eu une erreur
+                      return Text('Erreur'); // Affiche un message d'erreur s'il y a eu une erreur
                     } else {
                       return Text(
                         snapshot.data ?? '',
@@ -138,15 +188,13 @@ class _MyHomePageState extends State<MyHomePage> {
             ListTile(
               title: Text('Profil'),
               onTap: () {
-                Navigator.pushNamed(context,
-                    '/profile'); // Redirige vers la page de profil
+                Navigator.pushNamed(context, '/profile'); // Redirige vers la page de profil
               },
             ),
             ListTile(
               title: Text('Se déconnecter'),
               onTap: () {
-                _logout(
-                    context); // Déclenche la déconnexion
+                _logout(context); // Déclenche la déconnexion
               },
             ),
           ],
@@ -187,58 +235,54 @@ class _MyHomePageState extends State<MyHomePage> {
           ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
       final userId = jwtPayload['id'];
 
-      // Récupérer les informations de l'utilisateur à partir de la base de données
-      final url = Uri.parse('http://localhost:8080/mobileuser/getUserInfo/$userId');
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+      // Récupérer les informations de l'utilisateur àpartir de la base de données
+final url = Uri.parse('http://localhost:8080/mobileuser/getUserInfo/$userId');
+final response = await http.get(
+url,
+headers: {
+'Content-Type': 'application/json',
+'Authorization': 'Bearer $token',
+},
+);
+  if (response.statusCode == 200) {
+    final userInfo = json.decode(response.body);
+    print(userInfo);
+    final userName = userInfo[0]['user_name'];
+    final userBalance = userInfo[0]['balance'];
+    // Obtenez uniquement le nom d'utilisateur
+    print(userName);
+    print('OMNIPOINT:' + userBalance.toString());
 
-      if (response.statusCode == 200) {
-        final userInfo = json.decode(response.body);
-        print(userInfo);
-        final userName = userInfo[0]['user_name'];
-        final userBalance = userInfo[0]['balance'];
-        // Obtenez uniquement le nom d'utilisateur
-        print(userName);
-        print('OMNIPOINT:' + userBalance.toString());
-
-        return userName +
-            ' OMNIPOINT: ' +
-            userBalance.toString(); // Retourner le nom d'utilisateur + point
-      } else {
-        return 'Erreur de récupération des informations de l\'utilisateur';
-      }
-    } else {
-      return 'Aucun utilisateur connecté';
-    }
+    return userName +
+        ' OMNIPOINT: ' +
+        userBalance.toString(); // Retourner le nom d'utilisateur + point
+  } else {
+    return 'Erreur de récupération des informations de l\'utilisateur';
   }
+} else {
+  return 'Aucun utilisateur connecté';
+}
+}
 
-  Future<int?> _getUserIdFromToken()
-async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+Future<int?> _getUserIdFromToken() async {
+final prefs = await SharedPreferences.getInstance();
+final token = prefs.getString('token');if (token != null) {
+  // Récupérer l'ID de l'utilisateur à partir du token
+  final jwtPayload = json.decode(
+      ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
+  final userId = jwtPayload['id'];
+  print(userId); // Affichez l'ID de l'utilisateur dans la console
+  return userId;
+} else {
+  return null;
+}
+}
 
-    if (token != null) {
-      // Récupérer l'ID de l'utilisateur à partir du token
-      final jwtPayload = json.decode(
-          ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
-      final userId = jwtPayload['id'];
-      print(userId); // Affichez l'ID de l'utilisateur dans la console
-      return userId;
-    } else {
-      return null;
-    }
-  }
-
-  void _logout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token'); // Supprimez le token des préférences partagées
-    await prefs.remove('user_id'); // Supprimez l'ID de l'utilisateur des préférences partagées
-    Navigator.pushNamedAndRemoveUntil(
-        context, '/login', (route) => false); // Redirigez vers la page de connexion et supprimez toutes les routes empilées
-  }
+void _logout(BuildContext context) async {
+final prefs = await SharedPreferences.getInstance();
+await prefs.remove('token'); // Supprimez le token des préférences partagées
+await prefs.remove('user_id'); // Supprimez l'ID de l'utilisateur des préférences partagées
+Navigator.pushNamedAndRemoveUntil(
+context, '/login', (route) => false); // Redirigez vers la page de connexion et supprimez toutes les routes empilées
+}
 }
