@@ -24,7 +24,6 @@ class _BetPageState extends State<BetPage> {
   }
 
   Future<Map<String, dynamic>> fetchTournamentInfo(int id) async {
-    print("id: $id");
     final response = await http.get(Uri.parse('http://localhost:8080/tournament/info/$id'));
 
     if (response.statusCode == 200) {
@@ -81,12 +80,18 @@ class _BetPageState extends State<BetPage> {
           ),
           actions: <Widget>[
             ElevatedButton(
+              style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all<Color>(Colors.grey), // Modification du style du bouton
+              ),
               child: Text("Annuler"),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             ElevatedButton(
+              style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all<Color>(Colors.blue), // Modification du style du bouton
+              ),
               child: Text("Parier"),
               onPressed: () async {
                 double amount = double.parse(amountController.text);
@@ -184,82 +189,117 @@ class _BetPageState extends State<BetPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Détails du Tournoi'),
-      ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: futureTournamentInfo,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            if (snapshot.hasData) {
-              var tournament = snapshot.data!;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      tournament['tournament_name'],
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Détails du Tournoi'),
+    ),
+    body: FutureBuilder<Map<String, dynamic>>(
+      future: futureTournamentInfo,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          if (snapshot.hasData) {
+            var tournament = snapshot.data!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    tournament['tournament_name'],
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text('Date: ${tournament['tournament_date']}'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text('Adresse: ${tournament['field_adress']}'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text('Ville: ${tournament['field_town']}'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    'Type de Sport:',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text('Date: ${tournament['tournament_date']}'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    tournament['sport_type'],
+                    style: TextStyle(
+                      fontSize: 16,
+                    ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text('Adresse: ${tournament['field_adress']}'),
+                ),
+                SizedBox(height: 16), // Ajout d'un espace supplémentaire
+                Text(
+                  'Participants:',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text('Ville: ${tournament['field_town']}'),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text('Type de Sport: ${tournament['sport_type']}'),
-                  ),
-                  Expanded(
-                    child: FutureBuilder<List<Map<String, dynamic>>>(
-                      future: futureParticipants,
-                      builder: (context, participantSnapshot) {
-                        if (participantSnapshot.connectionState == ConnectionState.done) {
-                          if (participantSnapshot.hasData) {
-                            return ListView.builder(
-                              itemCount: participantSnapshot.data!.length,
-                              itemBuilder: (context, index) {
-                                var participant = participantSnapshot.data![index];
-                                return ListTile(
-                                  title: Text(participant['club_name']),
-                                  trailing: ElevatedButton(
-                                    onPressed: () {
-                                      _showBetDialog(context, participant['club_name'], participant['id_club']);
-                                    },
-                                    child: Text('Parier'),
+                ),
+                SizedBox(height: 8), // Ajout d'un espace supplémentaire
+                Expanded(
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    future: futureParticipants,
+                    builder: (context, participantSnapshot) {
+                      if (participantSnapshot.connectionState == ConnectionState.done) {
+                        if (participantSnapshot.hasData) {
+                          return ListView.builder(
+                            itemCount: participantSnapshot.data!.length,
+                            itemBuilder: (context, index) {
+                              var participant = participantSnapshot.data![index];
+                              return Padding(
+                                padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                child: Card(
+                                  elevation: 3,
+                                  child: ListTile(
+                                    title: Text(participant['club_name']),
+                                    trailing: ElevatedButton(
+                                      onPressed: () {
+                                        _showBetDialog(context, participant['club_name'], participant['id_club']);
+                                      },
+                                      style: ButtonStyle(
+                                        backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
+                                      ),
+                                      child: Text('Parier'),
+                                    ),
                                   ),
-                                );
-                              },
-                            );
-                          } else if (participantSnapshot.hasError) {
-                            return Center(child: Text("${participantSnapshot.error}"));
-                          }
+                                ),
+                              );
+                            },
+                          );
+                        } else if (participantSnapshot.hasError) {
+                          return Center(child: Text("${participantSnapshot.error}"));
                         }
-                        return Center(child: CircularProgressIndicator());
-                      },
-                    ),
+                      }
+                      return Center(child: CircularProgressIndicator());
+                    },
                   ),
-                ],
-              );
-            } else if (snapshot.hasError) {
-              return Center(child: Text("${snapshot.error}"));
-            }
+                ),
+              ],
+            );
+          } else if (snapshot.hasError) {
+            return Center(child: Text("${snapshot.error}"));
           }
-          return Center(child: CircularProgressIndicator());
-        },
-      ),
-    );
-  }
+        }
+        return Center(child: CircularProgressIndicator());
+      },
+    ),
+  );
 }
+
+}
+

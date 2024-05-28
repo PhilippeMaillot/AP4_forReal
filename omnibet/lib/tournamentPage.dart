@@ -71,25 +71,39 @@ class _TournamentListPageState extends State<TournamentListPage> {
             return ListView.builder(
               itemCount: validTournaments.length,
               itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(validTournaments[index].name),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(validTournaments[index].date.toLocal().toString()),
-                      CountdownTimer(tournamentDate: validTournaments[index].date),
-                    ],
-                  ),
-                  trailing: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => BetPage(tournamentId: validTournaments[index].id),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  child: Card(
+                    elevation: 3,
+                    child: ListTile(
+                      title: Text(validTournaments[index].name),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: 8),
+                          Text(
+                            DateFormat('dd/MM/yyyy').format(validTournaments[index].date),
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          CountdownTimer(tournamentDate: validTournaments[index].date),
+                        ],
+                      ),
+                      trailing: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BetPage(tournamentId: validTournaments[index].id),
+                            ),
+                          );
+                        },
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
+                          padding: MaterialStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.symmetric(vertical: 12, horizontal: 24)),
                         ),
-                      );
-                    },
-                    child: Text('Parier'),
+                        child: Text('Parier'),
+                      ),
+                    ),
                   ),
                 );
               },
