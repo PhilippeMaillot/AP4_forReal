@@ -13,6 +13,8 @@ import 'register_page.dart';
 import 'viewBetPage.dart';
 import 'profile_page.dart';
 import 'shop_page.dart'; // Importez la page de la boutique
+import 'roulette_page.dart';
+
 
 void main() {
   runApp(MyApp());
@@ -41,7 +43,8 @@ class MyApp extends StatelessWidget {
         '/tournament': (context) => TournamentListPage(),
         'viewbetpage': (context) => ViewBetPage(userId: userId),
         '/profile': (context) => ProfilePage(),
-        '/shop': (context) => ShopPage(), // Ajoutez la route '/shop'
+        '/shop': (context) => ShopPage(), // Ajoutez la route '/
+        '/roulette': (context) => RoulettePage(), 
         
       },
     );

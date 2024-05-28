@@ -20,6 +20,9 @@ dependencies:
   carousel_slider: ^4.2.1
   chewie: ^1.7.5
   intl: ^0.19.0
+  roulette: ^0.1.5
+  provider: ^6.1.2
+  audioplayers: ^6.0.0
 
 
 dev_dependencies:
@@ -32,3 +35,4 @@ flutter:
 
   assets:
     - assets/foot.mp4
+    - assets/roulette.mp3
