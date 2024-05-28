@@ -127,6 +127,17 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
+  Future<int?> _getUserBalance(int userId) async {
+    final response = await http.get(Uri.parse('http://localhost:8080/mobileuser/getUserInfo/$userId'));
+
+    if (response.statusCode == 200) {
+      List jsonResponse = json.decode(response.body);
+      return jsonResponse[0]['balance'];
+    } else {
+      return null;
+    }
+  }
+
   Future<void> deleteCartItem(int idCartItem) async {
     try {
       print('Deleting cart item with ID: $idCartItem');
@@ -144,6 +155,104 @@ class _CartPageState extends State<CartPage> {
       }
     } catch (error) {
       print('Error deleting cart item: $error');
+    }
+  }
+
+  Future<void> _updateUserBalance(int userId, double cartAmount) async {
+    final currentBalance = await _getUserBalance(userId);
+    if (currentBalance != null) {
+      var newBalance = currentBalance - cartAmount;
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/mobileuser/update'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'id_user': userId,
+          'new_balance': newBalance,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Solde mis à jour avec succès
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Solde mis à jour avec succès!')));
+      } else {
+        // Erreur lors de la mise à jour du solde
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la mise à jour du solde.')));
+      }
+    }
+  }
+
+  Future<void> _deleteAllItems() async {
+    final userId = await _getUserIdFromToken();
+    print("Deleting all cart items for user ID: $userId");
+    try {
+      final response = await http.post(
+        Uri.parse('$baseURL/cart/deleteAll/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        fetchCartItems(); // Refresh cart items
+      } else {
+        throw Exception('Failed to delete all cart items');
+      }
+    } catch (error) {
+      print('Error deleting all cart items: $error');
+    }
+  }
+
+  Future<void> validatePurchase() async {
+    if (userId == null) {
+      print('User ID is null, cannot validate purchase');
+      return;
+    }
+
+    int? userBalance = await _getUserBalance(userId!);
+    double totalCost = calculateTotalCost();
+
+    if (userBalance != null) {
+      if (userBalance >= totalCost) {
+        await _updateUserBalance(userId!, totalCost);
+        await _deleteAllItems();
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Succès'),
+              content: Text('Paiement Effectué'),
+              actions: [
+                TextButton(
+                  child: Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Erreur'),
+              content: Text('Pas assez d\'Omnipoints'),
+              actions: [
+                TextButton(
+                  child: Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
     }
   }
 
