@@ -10,6 +10,7 @@ import 'login_page.dart';
 import 'register_page.dart';
 import 'viewBetPage.dart'; // Importez la page de visualisation des paris
 import 'profile_page.dart'; // Importez la page de profil
+import 'shop_page.dart'; // Importez la page de la boutique
 
 void main() {
   runApp(MyApp());
@@ -32,6 +33,8 @@ class MyApp extends StatelessWidget {
         '/home': (context) => MyHomePage(),
         '/tournament': (context) => TournamentListPage(), // Ajoutez la route '/tournament'
         '/profile': (context) => ProfilePage(), // Ajoutez la route '/profile'
+        '/shop': (context) => ShopPage(), // Ajoutez la route '/shop'
+
       },
     );
   }
