@@ -15,12 +15,12 @@ class _ShopPageState extends State<ShopPage> {
   late List<Product> products;
   final String baseURL = 'http://localhost:8080';
   int cartItemCount = 0; // Nombre d'articles dans le panier
+  int? cartId; // ID du panier
 
   @override
   void initState() {
     super.initState();
     fetchProducts();
-    fetchCartItemCount(); // Appel pour récupérer le nombre d'articles dans le panier
   }
 
   Future<void> fetchProducts() async {
@@ -42,45 +42,68 @@ class _ShopPageState extends State<ShopPage> {
     }
   }
 
-  Future<void> addToCart(int productId,) async {
-    try {
-      final Map<String, dynamic> requestData = {
-        'id_product': productId,
-        'id_cart': 1,
-        'item_quantity': 1
-      };
-
-      final response = await http.post(
-        Uri.parse('$baseURL/cart/add'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(requestData),
-      );
-
-      if (response.statusCode == 200) {
-        print('Produit ajouté au panier avec succès');
-        fetchCartItemCount(); // Mettre à jour le nombre d'articles dans le panier après l'ajout
-      } else {
-        print('Échec de l\'ajout au panier');
-      }
-    } catch (error) {
-      print('Erreur lors de l\'ajout au panier: $error');
+  Future<int?> _getUserIdFromToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token != null) {
+      final jwtPayload = json.decode(
+          ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
+      final userId = jwtPayload['id'];
+      return userId;
+    } else {
+      return null;
     }
   }
 
-  Future<void> fetchCartItemCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('userId'); // Récupérer l'ID de l'utilisateur
+  Future<void> fetchCartId() async {
+    print('Fetching cart ID');
+    final userId = await _getUserIdFromToken();
+    print('User ID: $userId');
 
     if (userId != null) {
       final response = await http.get(Uri.parse('$baseURL/cart/get/$userId'));
       if (response.statusCode == 200) {
-        final List<dynamic> cartItems = json.decode(response.body);
-        setState(() {
-          cartItemCount = cartItems.length; // Mettre à jour le nombre d'articles dans le panier
-        });
+        print('Cart ID response: ${response.body}');
+        final cartData = json.decode(response.body);
+        if (cartData.isNotEmpty) {
+          setState(() {
+            cartId = cartData[0]['id_cart']; // Mettre à jour l'ID du panier
+          });
+        }
       }
+    }
+  }
+
+  Future<void> addToCart(int productId) async {
+    print('Product ID: $cartId');
+    await fetchCartId(); // Récupérer l'ID du panier si ce n'est pas encore fait
+
+    if (cartId != null) {
+      try {
+        final Map<String, dynamic> requestData = {
+          'id_product': productId,
+          'id_cart': cartId,
+          'item_quantity': 1
+        };
+
+        final response = await http.post(
+          Uri.parse('$baseURL/cart/add'),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(requestData),
+        );
+
+        if (response.statusCode == 200) {
+          print('Produit ajouté au panier avec succès');
+        } else {
+          print('Échec de l\'ajout au panier');
+        }
+      } catch (error) {
+        print('Erreur lors de l\'ajout au panier: $error');
+      }
+    } else {
+      print('ID du panier non trouvé');
     }
   }
 
