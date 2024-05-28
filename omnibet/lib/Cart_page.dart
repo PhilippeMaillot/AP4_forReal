@@ -277,108 +277,68 @@ class _CartPageState extends State<CartPage> {
           : cartItems.isNotEmpty
               ? Column(
                   children: [
-                 Expanded(
-  child: ListView.builder(
-    itemCount: cartItems.length,
-    itemBuilder: (context, index) {
-      final item = cartItems[index];
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: 500), // Durée de l'animation
-          curve: Curves.easeInOut, // Courbe d'animation
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10), // Bord arrondi
-            boxShadow: [
-              BoxShadow(
-                color: const Color.fromARGB(255, 3, 3, 3).withOpacity(0.5), // Couleur de l'ombre
-                spreadRadius: 2, // Rayon de diffusion
-                blurRadius: 3, // Rayon de flou
-                offset: Offset(0, 2), // Décalage de l'ombre
-              ),
-            ],
-            color: Color.fromARGB(255, 238, 238, 238), // Couleur de fond du Card
-          ),
-          child: ListTile(
-            leading: Image.network(item.image),
-            title: Text(item.title),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${item.price} points'),
-                Text('Quantité: ${item.quantity}'),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.remove),
-                      onPressed: () {
-                        updateCartItemQuantity(item.id, cartId, 'remove');
-                      },
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: cartItems.length,
+                        itemBuilder: (context, index) {
+                          final item = cartItems[index];
+                          return ListTile(
+                            leading: Image.network(item.image),
+                            title: Text(item.title),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('${item.price} points'),
+                                Text('Quantité: ${item.quantity}'),
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.remove),
+                                      onPressed: () {
+                                        updateCartItemQuantity(item.id, cartId, 'remove');
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.add),
+                                      onPressed: () {
+                                        updateCartItemQuantity(item.id, cartId, 'add');
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete),
+                                      onPressed: () {
+                                        deleteCartItem(item.idDuCart);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: () {
-                        updateCartItemQuantity(item.id, cartId, 'add');
-                      },
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Total: ${calculateTotalCost()} Omnipoints',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              validatePurchase();
+                            },
+                            child: Text('Valider'),
+                          ),
+                        ],
+                      ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () {
-                        deleteCartItem(item.idDuCart);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  ),
-),
-
-                Padding(
-  padding: const EdgeInsets.all(8.0),
-  child: AnimatedContainer(
-    duration: Duration(milliseconds: 500), // Durée de l'animation
-    curve: Curves.easeInOut, // Courbe d'animation
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(10), // Bord arrondi
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withOpacity(0.5), // Couleur de l'ombre
-          spreadRadius: 5, // Rayon de diffusion
-          blurRadius: 7, // Rayon de flou
-          offset: Offset(0, 3), // Décalage de l'ombre
-        ),
-      ],
-      color: Colors.blue, // Couleur de fond du Card
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Total: ${calculateTotalCost()} Omnipoints',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: () {
-              print('Panier validé');
-            },
-            child: Text('Valider'),
-          ),
-        ],
-      ),
-    ),
-  ),
-)
                   ],
                 )
               : Center(
@@ -387,4 +347,3 @@ class _CartPageState extends State<CartPage> {
     );
   }
 }
-

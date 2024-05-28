@@ -45,7 +45,6 @@ class RouletteProvider extends ChangeNotifier {
   Timer? _timer;
   double _velocity = 100.0; // Vitesse initiale élevée
   int _totalDuration = 600; // Durée totale de la roulette en millisecondes (9 secondes)
-  AudioCache _audioCache = AudioCache();
 
   bool get isSpinning => _isSpinning;
   String get result => _result;
