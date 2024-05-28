@@ -43,11 +43,30 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
+Future<void> _processBets() async {
+    final url = Uri.parse('http://localhost:8080/bet/process');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        print('Bets processed successfully');
+      } else {
+        print('Failed to process bets: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error processing bets: $e');
+    }
+  }
 class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
     _checkLoginStatus();
+    _processBets();
   }
 
   _checkLoginStatus() async {
