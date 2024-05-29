@@ -1,8 +1,10 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RoulettePage extends StatelessWidget {
   @override
@@ -44,7 +46,14 @@ class RouletteProvider extends ChangeNotifier {
   Timer? _timer;
   double _velocity = 0.0;
   final int _spinDuration = 7000; // Durée totale de la roulette en millisecondes (7 secondes)
-
+  String apiUrl = 'http://localhost:8080/mobileuser/updateBalance'; // Remplacer par votre URL API
+ String userInfoUrl = 'http://localhost:8080/mobileuser/getUserInfo';
+  // Méthode pour récupérer les infos utilisateur à partir du jeton JWT
+  Future<int> _getUserId(String token) async {
+    final jwtPayload = json.decode(
+        ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
+    return jwtPayload['id'];
+  }
   RouletteProvider() {
     items.shuffle(); // Mélanger les éléments pour une disposition aléatoire
   }
@@ -60,7 +69,7 @@ class RouletteProvider extends ChangeNotifier {
     notifyListeners();
 
     // Jouer le son
-    final _audioPlayer = AudioPlayer();
+ final _audioPlayer = AudioPlayer();
     await _audioPlayer.play(AssetSource('roulette.mp3'));
 
     // Timer pour gérer la décélération
@@ -80,7 +89,7 @@ class RouletteProvider extends ChangeNotifier {
     });
   }
 
-  void _selectResult() {
+  void _selectResult() async {
     // Calculer la position de la flèche
     double offset = scrollController.offset + 100; // Ajuster pour centrer sur l'élément
 
@@ -93,8 +102,42 @@ class RouletteProvider extends ChangeNotifier {
     // Marquer la fin du spin
     _isSpinning = false;
 
+    // Mettre à jour le solde de l'utilisateur
+    await _updateUserBalance(_result);
+
     // Notifier les écouteurs de changement
     notifyListeners();
+  }
+
+  Future<void> _updateUserBalance(String reward) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
+    if (userId == 0) {
+      print('User ID not found in shared preferences.');
+      return;
+    }
+
+    int points = int.parse(reward.split(' ')[0]);
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'id_user': userId,
+        'amount_to_add': points,
+      }),
+    );
+
+    print('Request body: ${jsonEncode(<String, dynamic>{ 'id_user': userId, 'amount_to_add': points })}');
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      print('User balance updated successfully.');
+    } else {
+      throw Exception('Failed to update user balance.');
+    }
   }
 
   @override
@@ -161,10 +204,12 @@ class RouletteWidget extends StatelessWidget {
                 child: Center(
                   child: Text(
                     provider.items[itemIndex],
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize:                    24,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              );
+              ));
+              
             },
             itemCount: provider.items.length * 100,
           ),
@@ -206,3 +251,4 @@ class ResultDisplay extends StatelessWidget {
     );
   }
 }
+

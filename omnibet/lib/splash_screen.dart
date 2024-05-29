@@ -13,16 +13,17 @@ class _SplashScreenState extends State<SplashScreen> {
     _checkLoginStatus();
   }
 
-  _checkLoginStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+ _checkLoginStatus() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token');
+  final userId = prefs.getInt('user_id'); // Vérifie si l'ID de l'utilisateur est présent
 
-    if (token != null) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
+  if (token != null && userId != null) { // Vérifie si à la fois le token et l'ID de l'utilisateur sont présents
+    Navigator.pushReplacementNamed(context, '/home');
+  } else {
+    Navigator.pushReplacementNamed(context, '/login');
   }
+}
 
   @override
   Widget build(BuildContext context) {

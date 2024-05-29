@@ -15,14 +15,14 @@ class _LoginPageState extends State<LoginPage> {
   String _email = '';
   String _password = '';
 
- Future<void> _login() async {
+Future<void> _login() async {
   final url = Uri.parse('http://localhost:8080/mobileuser/login');
   final response = await http.post(
     url,
     headers: {'Content-Type': 'application/json'},
     body: json.encode({
       'email': _email,
-      'password': _password, 
+      'password': _password,
     }),
   );
 
@@ -30,8 +30,11 @@ class _LoginPageState extends State<LoginPage> {
     final prefs = await SharedPreferences.getInstance();
     final body = json.decode(response.body);
     final token = body['token']; // Récupération du token
+    final userId = body['user_id']; // Récupération de l'ID utilisateur
     await prefs.setString('token', token);
+    await prefs.setInt('user_id', userId); // Stockage de l'ID utilisateur
     print('Token généré : $token'); // Affichage du token dans la console
+    print('User ID : $userId'); // Affichage de l'ID utilisateur dans la console
     Navigator.pushNamed(context, '/home'); // Redirection vers la page principale après connexion
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -41,6 +44,8 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+
+
 
   @override
   Widget build(BuildContext context) {
