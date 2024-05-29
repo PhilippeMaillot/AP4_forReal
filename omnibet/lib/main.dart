@@ -201,6 +201,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 Navigator.pushNamed(context, '/profile');
               },
             ),
+                ListTile(
+              title: Text('roulette'),
+              onTap: () {
+                Navigator.pushNamed(context, '/roulette');
+              },
+            ),
             ListTile(
               title: Text('Se déconnecter'),
               onTap: () {
