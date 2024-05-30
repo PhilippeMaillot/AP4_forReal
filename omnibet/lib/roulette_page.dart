@@ -103,67 +103,67 @@ class RouletteProvider extends ChangeNotifier {
     // Notifier les écouteurs de changement
     notifyListeners();
   }
+  
 
-Future<int> _updateUserBalance(String reward) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
-  if (userId == 0) {
-    print('User ID not found in shared preferences.');
-    return 0;
-  }
+  Future<int> _updateUserBalance(String reward) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
+    if (userId == 0) {
+      print('User ID not found in shared preferences.');
+      return 0;
+    }
 
-  int points = int.parse(reward.split(' ')[0]);
-  final response = await http.post(
-    Uri.parse(apiUrl),
-    headers: <String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: jsonEncode(<String, dynamic>{
-      'id_user': userId,
-      'amount_to_add': points,
-    }),
-  );
+    int points = int.parse(reward.split(' ')[0]);
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'id_user': userId,
+        'amount_to_add': points,
+      }),
+    );
 
-  print('Request body: ${jsonEncode(<String, dynamic>{ 'id_user': userId, 'amount_to_add': points })}');
-  print('Response status: ${response.statusCode}');
-  print('Response body: ${response.body}');
-
-  if (response.statusCode == 200) {
-    // Extraire le nouveau solde de la réponse
-    final updatedBalance = jsonDecode(response.body)['new_balance'];
-    return updatedBalance is int ? updatedBalance : int.tryParse(updatedBalance.toString()) ?? 0;
-  } else {
-    throw Exception('Failed to update user balance.');
-  }
-}
-
-Future<int> _getUserPoints() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
-  if (userId == 0) {
-    print('User ID not found in shared preferences.');
-    return 0;
-  }
-
-  final response = await http.get(
-    Uri.parse('http://localhost:8080/mobileuser/getUserInfo/$userId'),
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-  );
-
-  if (response.statusCode == 200) {
-    final userInfo = jsonDecode(response.body);
-    dynamic pointsData = userInfo[0]['balance']; // Obtenir le solde de l'utilisateur
-    int points = pointsData is int ? pointsData : int.tryParse(pointsData.toString()) ?? 0; // Convertir en entier
-    return points;
-  } else {
-    print('Failed to load user points. Status code: ${response.statusCode}');
+    print('Request body: ${jsonEncode(<String, dynamic>{ 'id_user': userId, 'amount_to_add': points })}');
+    print('Response status: ${response.statusCode}');
     print('Response body: ${response.body}');
-    throw Exception('Failed to load user points.');
-  }
-}
 
+    if (response.statusCode == 200) {
+      // Extraire le nouveau solde de la réponse
+      final updatedBalance = jsonDecode(response.body)['new_balance'];
+      return updatedBalance is int ? updatedBalance : int.tryParse(updatedBalance.toString()) ?? 0;
+    } else {
+      throw Exception('Failed to update user balance.');
+    }
+  }
+
+  Future<int> _getUserPoints() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
+    if (userId == 0) {
+      print('User ID not found in shared preferences.');
+      return 0;
+    }
+
+    final response = await http.get(
+      Uri.parse('http://localhost:8080/mobileuser/getUserInfo/$userId'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final userInfo = jsonDecode(response.body);
+      dynamic pointsData = userInfo[0]['balance']; // Obtenir le solde de l'utilisateur
+      int points = pointsData is int ? pointsData : int.tryParse(pointsData.toString()) ?? 0; // Convertir en entier
+      return points;
+    } else {
+      print('Failed to load user points. Status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      throw Exception('Failed to load user points.');
+    }
+  }
 
   Future<void> deductPoints(int points) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -200,39 +200,40 @@ Future<int> _getUserPoints() async {
     return prefs.getBool('has_used_free_spin') ?? false;
   }
 
-  Future<void> markFreeSpinUsed() async {SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> markFreeSpinUsed() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('has_used_free_spin', true);
   }
 
   Future<void> payRoulette(int points) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
-  if (userId == 0) {
-    print('User ID not found in shared preferences.');
-    return;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
+    if (userId == 0) {
+      print('User ID not found in shared preferences.');
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'id_user': userId,
+        'amount_to_add': -points, // Deduct points
+      }),
+    );
+
+    print('Request body: ${jsonEncode(<String, dynamic>{ 'id_user': userId, 'amount_to_add': -points })}');
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      print('User points deducted successfully.');
+    } else {
+      throw Exception('Failed to deduct user points.');
+    }
   }
-
-  final response = await http.post(
-    Uri.parse(apiUrl),
-    headers: <String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: jsonEncode(<String, dynamic>{
-      'id_user': userId,
-      'amount_to_add': -points, // Deduct points
-    }),
-  );
-
-  print('Request body: ${jsonEncode(<String, dynamic>{ 'id_user': userId, 'amount_to_add': -points })}');
-  print('Response status: ${response.statusCode}');
-  print('Response body: ${response.body}');
-
-  if (response.statusCode == 200) {
-    print('User points deducted successfully.');
-  } else {
-    throw Exception('Failed to deduct user points.');
-  }
-}
 
   @override
   void dispose() {
@@ -335,19 +336,35 @@ class SpinButton extends StatelessWidget {
                 context: context,
                 builder: (BuildContext context) => AlertDialog(
                   title: Text('Lancer la roue'),
-                  content: FutureBuilder<int>(
-                    future: provider._getUserPoints(),
-                    builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+                  content: FutureBuilder<bool>(
+                    future: provider.hasUsedFreeSpin(),
+                    builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return CircularProgressIndicator();
                       } else if (snapshot.hasError) {
                         return Text('Erreur : ${snapshot.error}');
                       } else {
-                        int userPoints = snapshot.data ?? 0;
-                        if (userPoints >= 100) {
-                          return Text('Vous avez ${userPoints} points. Voulez-vous lancer la roue pour 100 points ?');
+                        bool hasUsedFreeSpin = snapshot.data ?? true;
+                        if (hasUsedFreeSpin) {
+                          return FutureBuilder<int>(
+                            future: provider._getUserPoints(),
+                            builder: (BuildContext context, AsyncSnapshot<int> pointsSnapshot) {
+                              if (pointsSnapshot.connectionState == ConnectionState.waiting) {
+                                return CircularProgressIndicator();
+                              } else if (pointsSnapshot.hasError) {
+                                return Text('Erreur : ${pointsSnapshot.error}');
+                              } else {
+                                int userPoints = pointsSnapshot.data ?? 0;
+                                if (userPoints >= 100) {
+                                  return Text('Vous avez ${userPoints} points. Voulez-vous lancer la roue pour 100 points ?');
+                                } else {
+                                  return Text('Vous n\'avez pas assez de points pour lancer la roue.');
+                                }
+                              }
+                            },
+                          );
                         } else {
-                          return Text('Vous n\'avez pas assez de points pour lancer la roue.');
+                          return Text('Vous avez un lancer gratuit disponible pour aujourd\'hui.');
                         }
                       }
                     },
@@ -360,12 +377,28 @@ class SpinButton extends StatelessWidget {
                       },
                     ),
                     TextButton(
-                      child: Text('Lancer'),
+                      child: Text('Lancer Gratuitement'),
+                      onPressed: () async {
+                        Navigator.of(context).pop();
+                        bool hasUsedFreeSpin = await provider.hasUsedFreeSpin();
+                        if (!hasUsedFreeSpin) {
+                          provider.startSpin();
+                          await provider.markFreeSpinUsed();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Vous avez déjà utilisé votre lancer gratuit pour aujourd\'hui.')),
+                          );
+                          return;
+                        }
+                      },
+                    ),
+                    TextButton(
+                      child: Text('Lancer pour 100 points'),
                       onPressed: () async {
                         Navigator.of(context).pop();
                         int userPoints = await provider._getUserPoints();
                         if (userPoints >= 100) {
-                          await provider.payRoulette(100); // Pay 100 points
+                          await provider.payRoulette(100); // Deduct 100 points
                           provider.startSpin();
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -394,6 +427,3 @@ class ResultDisplay extends StatelessWidget {
     );
   }
 }
-
-
-   
