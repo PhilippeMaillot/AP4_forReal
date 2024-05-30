@@ -47,13 +47,8 @@ class RouletteProvider extends ChangeNotifier {
   double _velocity = 0.0;
   final int _spinDuration = 7000; // Durée totale de la roulette en millisecondes (7 secondes)
   String apiUrl = 'http://localhost:8080/mobileuser/updateBalance'; // Remplacer par votre URL API
- String userInfoUrl = 'http://localhost:8080/mobileuser/getUserInfo';
-  // Méthode pour récupérer les infos utilisateur à partir du jeton JWT
-  Future<int> _getUserId(String token) async {
-    final jwtPayload = json.decode(
-        ascii.decode(base64.decode(base64.normalize(token.split(".")[1]))));
-    return jwtPayload['id'];
-  }
+  String userInfoUrl = 'http://localhost:8080/mobileuser/getUserInfo/:id_user';
+
   RouletteProvider() {
     items.shuffle(); // Mélanger les éléments pour une disposition aléatoire
   }
@@ -69,7 +64,7 @@ class RouletteProvider extends ChangeNotifier {
     notifyListeners();
 
     // Jouer le son
- final _audioPlayer = AudioPlayer();
+    final _audioPlayer = AudioPlayer();
     await _audioPlayer.play(AssetSource('roulette.mp3'));
 
     // Timer pour gérer la décélération
@@ -109,7 +104,68 @@ class RouletteProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _updateUserBalance(String reward) async {
+Future<int> _updateUserBalance(String reward) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
+  if (userId == 0) {
+    print('User ID not found in shared preferences.');
+    return 0;
+  }
+
+  int points = int.parse(reward.split(' ')[0]);
+  final response = await http.post(
+    Uri.parse(apiUrl),
+    headers: <String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+    body: jsonEncode(<String, dynamic>{
+      'id_user': userId,
+      'amount_to_add': points,
+    }),
+  );
+
+  print('Request body: ${jsonEncode(<String, dynamic>{ 'id_user': userId, 'amount_to_add': points })}');
+  print('Response status: ${response.statusCode}');
+  print('Response body: ${response.body}');
+
+  if (response.statusCode == 200) {
+    // Extraire le nouveau solde de la réponse
+    final updatedBalance = jsonDecode(response.body)['new_balance'];
+    return updatedBalance is int ? updatedBalance : int.tryParse(updatedBalance.toString()) ?? 0;
+  } else {
+    throw Exception('Failed to update user balance.');
+  }
+}
+
+Future<int> _getUserPoints() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
+  if (userId == 0) {
+    print('User ID not found in shared preferences.');
+    return 0;
+  }
+
+  final response = await http.get(
+    Uri.parse('http://localhost:8080/mobileuser/getUserInfo/$userId'),
+    headers: {
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final userInfo = jsonDecode(response.body);
+    dynamic pointsData = userInfo[0]['balance']; // Obtenir le solde de l'utilisateur
+    int points = pointsData is int ? pointsData : int.tryParse(pointsData.toString()) ?? 0; // Convertir en entier
+    return points;
+  } else {
+    print('Failed to load user points. Status code: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    throw Exception('Failed to load user points.');
+  }
+}
+
+
+  Future<void> deductPoints(int points) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
     if (userId == 0) {
@@ -117,7 +173,6 @@ class RouletteProvider extends ChangeNotifier {
       return;
     }
 
-    int points = int.parse(reward.split(' ')[0]);
     final response = await http.post(
       Uri.parse(apiUrl),
       headers: <String, String>{
@@ -125,20 +180,59 @@ class RouletteProvider extends ChangeNotifier {
       },
       body: jsonEncode(<String, dynamic>{
         'id_user': userId,
-        'amount_to_add': points,
+        'amount_to_add': -points, // Deduct points
       }),
     );
 
-    print('Request body: ${jsonEncode(<String, dynamic>{ 'id_user': userId, 'amount_to_add': points })}');
+    print('Request body: ${jsonEncode(<String, dynamic>{ 'id_user': userId, 'amount_to_add': -points })}');
     print('Response status: ${response.statusCode}');
     print('Response body: ${response.body}');
 
     if (response.statusCode == 200) {
-      print('User balance updated successfully.');
+      print('User points deducted successfully.');
     } else {
-      throw Exception('Failed to update user balance.');
+      throw Exception('Failed to deduct user points.');
     }
   }
+
+  Future<bool> hasUsedFreeSpin() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('has_used_free_spin') ?? false;
+  }
+
+  Future<void> markFreeSpinUsed() async {SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_used_free_spin', true);
+  }
+
+  Future<void> payRoulette(int points) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  int userId = prefs.getInt('user_id') ?? 0; // Obtenez l'ID de l'utilisateur à partir des préférences partagées
+  if (userId == 0) {
+    print('User ID not found in shared preferences.');
+    return;
+  }
+
+  final response = await http.post(
+    Uri.parse(apiUrl),
+    headers: <String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+    body: jsonEncode(<String, dynamic>{
+      'id_user': userId,
+      'amount_to_add': -points, // Deduct points
+    }),
+  );
+
+  print('Request body: ${jsonEncode(<String, dynamic>{ 'id_user': userId, 'amount_to_add': -points })}');
+  print('Response status: ${response.statusCode}');
+  print('Response body: ${response.body}');
+
+  if (response.statusCode == 200) {
+    print('User points deducted successfully.');
+  } else {
+    throw Exception('Failed to deduct user points.');
+  }
+}
 
   @override
   void dispose() {
@@ -204,12 +298,13 @@ class RouletteWidget extends StatelessWidget {
                 child: Center(
                   child: Text(
                     provider.items[itemIndex],
-                    style: TextStyle(fontSize:                    24,
-                    fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ));
-              
+              );
             },
             itemCount: provider.items.length * 100,
           ),
@@ -234,7 +329,55 @@ class SpinButton extends StatelessWidget {
     final provider = Provider.of<RouletteProvider>(context);
 
     return ElevatedButton(
-      onPressed: provider.isSpinning ? null : () => provider.startSpin(),
+      onPressed: provider.isSpinning
+          ? null
+          : () => showDialog(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: Text('Lancer la roue'),
+                  content: FutureBuilder<int>(
+                    future: provider._getUserPoints(),
+                    builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      } else if (snapshot.hasError) {
+                        return Text('Erreur : ${snapshot.error}');
+                      } else {
+                        int userPoints = snapshot.data ?? 0;
+                        if (userPoints >= 100) {
+                          return Text('Vous avez ${userPoints} points. Voulez-vous lancer la roue pour 100 points ?');
+                        } else {
+                          return Text('Vous n\'avez pas assez de points pour lancer la roue.');
+                        }
+                      }
+                    },
+                  ),
+                  actions: <Widget>[
+                    TextButton(
+                      child: Text('Annuler'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    TextButton(
+                      child: Text('Lancer'),
+                      onPressed: () async {
+                        Navigator.of(context).pop();
+                        int userPoints = await provider._getUserPoints();
+                        if (userPoints >= 100) {
+                          await provider.payRoulette(100); // Pay 100 points
+                          provider.startSpin();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Vous n\'avez pas assez de points pour lancer la roue.')),
+                          );
+                          return;
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
       child: Text('Start Spin'),
     );
   }
@@ -252,3 +395,5 @@ class ResultDisplay extends StatelessWidget {
   }
 }
 
+
+   
