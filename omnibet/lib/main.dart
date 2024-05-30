@@ -99,6 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _userIdFuture = _getUserIdFromToken();
     _fetchUserInfo();
+    _processBets();
   }
 
   @override
@@ -110,11 +111,29 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _fetchUserInfo() async {
     final userInfo = await _getUserInfo();
     _userInfoSubject.add(userInfo);
-    Timer.periodic(Duration(seconds: 100), (Timer t) async {
+    Timer.periodic(Duration(seconds: 5), (Timer t) async {
       final userInfo = await _getUserInfo();
       _userInfoSubject.add(userInfo);
     });
   }
+
+  Future<void> _processBets() async {
+    await _callProcessBetsApi();
+    Timer.periodic(Duration(seconds: 40), (Timer t) async {
+      await _callProcessBetsApi();
+    });
+  }
+
+  Future<void> _callProcessBetsApi() async {
+    final response = await http.post(Uri.parse('http://localhost:8080/bet/process'));
+
+    if (response.statusCode == 200) {
+      print('Bets processed successfully');
+    } else {
+      print('Failed to process bets: ${response.statusCode}');
+    }
+  }
+
 
   static List<Widget> _widgetOptions = <Widget>[
     HomePageContent(),
